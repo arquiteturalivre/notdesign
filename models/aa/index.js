@@ -65,7 +65,7 @@ const pt_d = (params) => {
 
 const pt_e = (params) => {
   let ang = (Math.PI/2) - degToRad(params.back_plane_angle)
-  return [(Math.cos(ang) * (pt_c(params, 1)[0] / Math.sin(ang))) + pt_c(params, 1)[0], 0]
+  return [(Math.cos(ang) * (pt_d(params, 1)[0] / Math.sin(ang))) + pt_d(params, 1)[0], 0]
 }
 
 const pt_f = (params) => {
@@ -185,7 +185,39 @@ const front = (params) => {
       circle({radius: params.radius, segments: 60 })]
     )
   )])
+}
 
+const back = (params) => {
+  // REFACTOR as front
+  let h = distance(pt_e(params), pt_d(params)) 
+  let d = params.seat_internal_length/2 * Math.cos(degToRad(params.side_planes_angle)) - params.wood_thickness
+  let a = Math.PI /2 - Math.atan2(d, h) - degToRad(params.side_planes_angle)
+  let hyp = Math.hypot(h, d)
+
+  return hullChain([translate([0 - Math.cos(a) * hyp, 0 - Math.sin(a) * hyp],
+  [
+    circle({radius: params.radius, segments: 60 }),
+    rotateZ(-1.0 * degToRad(params.side_planes_angle),
+      translate(
+        [0, h],
+        square({size: params.radius * 2})
+      )
+    )]
+  ),
+  rotateZ(Math.PI/4,
+    square({size: (params.radius * 2) / Math.sqrt(2)})),
+  mirrorX(
+    translate([0 - Math.cos(a) * hyp, 0 - Math.sin(a) * hyp],
+    [
+      rotateZ(-1.0 * degToRad(params.side_planes_angle),
+        translate(
+          [0, h],
+          square({size: params.radius * 2})
+        )
+      ),
+      circle({radius: params.radius, segments: 60 })]
+    )
+  )])
 }
 
 const front3D = (params) => {
@@ -196,8 +228,16 @@ const front3D = (params) => {
     extrudeLinear({height: params.wood_thickness}, front(params)))))
 }
 
+const back3D = (params) => {
+  let a = Math.atan2(pt_d(params)[0] - pt_c(params)[0], pt_d(params)[1] - pt_c(params)[1])
+  return translate([Math.sin(a) * (distance(pt_d(params), pt_c(params))  + params.radius /2), 0 ,Math.cos(a) * (distance(pt_d(params), pt_c(params)) - params.wood_thickness * 2 )],
+  rotate([Math.PI/2 - degToRad(params.back_plane_angle), 0, Math.PI/2],
+    translate([0, -params.radius, 0], 
+    extrudeLinear({height: params.wood_thickness}, back(params)))))
+}
+
 const main = (params) => {
-    return [sides(params), front3D(params)]
+    return [sides(params), front3D(params), back3D(params)]
     // return front3D(params)
 }
 
